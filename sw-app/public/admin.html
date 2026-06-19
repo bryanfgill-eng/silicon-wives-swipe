@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silicon Wives — Swipe App Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ====== RESET & BASE ====== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --pink: #e91e8c;
+  --pink-dark: #c2166e;
+  --pink-light: rgba(233,30,140,0.12);
+  --red: #f44336;
+  --green: #22c55e;
+  --bg: #0d0d0d;
+  --bg2: #141414;
+  --bg3: #1c1c1c;
+  --bg4: #242424;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.13);
+  --text: #f0f0f0;
+  --text2: rgba(255,255,255,0.6);
+  --text3: rgba(255,255,255,0.35);
+  --radius: 12px;
+  --sidebar: 260px;
+}
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; }
+
+/* ====== LAYOUT ====== */
+.layout { display: flex; height: 100vh; overflow: hidden; }
+
+/* ====== SIDEBAR ====== */
+.sidebar {
+  width: var(--sidebar);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--pink), #ff6b6b);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 4px 12px rgba(233,30,140,0.35);
+  flex-shrink: 0;
+}
+.logo-text { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.logo-sub { font-size: 11px; color: var(--text3); font-weight: 400; }
+.nav { padding: 12px 10px; flex: 1; }
+.nav-section { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; padding: 12px 10px 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px;
+  color: var(--text2); font-size: 13.5px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; margin-bottom: 2px;
+  border: none; background: transparent; width: 100%; text-align: left;
+}
+.nav-item svg { flex-shrink: 0; opacity: 0.7; }
+.nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.nav-item.active { background: var(--pink-light); color: var(--pink); }
+.nav-item.active svg { opacity: 1; }
+.sidebar-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text3);
+}
+.sidebar-footer .store-name { font-weight: 600; color: var(--text2); margin-bottom: 2px; font-size: 12.5px; }
+
+/* ====== MAIN ====== */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+.topbar-title { font-size: 18px; font-weight: 700; }
+.topbar-title span { color: var(--text3); font-weight: 400; font-size: 14px; margin-left: 8px; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+/* ====== TABS ====== */
+.tab-bar {
+  display: flex; gap: 4px;
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 22px;
+  width: fit-content;
+}
+.tab-pill {
+  padding: 7px 18px; border-radius: 7px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  border: none; background: transparent; color: var(--text2);
+  transition: all 0.15s;
+}
+.tab-pill.active { background: var(--bg4); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+
+/* ====== STATS CARDS ====== */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+.stat-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+.stat-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 800; line-height: 1; }
+.stat-value.pink { color: var(--pink); }
+.stat-value.green { color: var(--green); }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+/* ====== FILTER PANEL ====== */
+.filter-panel {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 22px; margin-bottom: 18px;
+}
+.filter-panel__title {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+.filter-group label { font-size: 12px; color: var(--text3); font-weight: 500; display: block; margin-bottom: 7px; }
+.filter-group input[type=range] { width: 100%; accent-color: var(--pink); cursor: pointer; }
+.price-inputs { display: flex; gap: 8px; margin-top: 8px; }
+.price-input {
+  flex: 1; background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text); border-radius: 8px; padding: 7px 10px;
+  font-size: 13px; font-family: inherit; outline: none;
+}
+.price-input:focus { border-color: var(--pink); }
+
+/* ====== TYPE TOGGLES ====== */
+.type-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.type-chip {
+  padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border2); background: var(--bg4);
+  color: var(--text2); transition: all 0.15s; user-select: none;
+}
+.type-chip.excluded { background: rgba(244,67,54,0.12); border-color: rgba(244,67,54,0.4); color: #f44336; text-decoration: line-through; }
+.type-chip.included { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.4); color: var(--green); }
+
+/* ====== SORT CONTROLS ====== */
+.sort-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.sort-option {
+  padding: 7px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border2); background: var(--bg4);
+  color: var(--text2); transition: all 0.15s;
+}
+.sort-option.active { background: var(--pink-light); border-color: var(--pink); color: var(--pink); }
+.sort-option:hover:not(.active) { border-color: rgba(255,255,255,0.2); color: var(--text); }
+
+/* ====== PRODUCT TABLE ====== */
+.table-wrap {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.table-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.search-input {
+  background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text); border-radius: 8px; padding: 8px 12px 8px 34px;
+  font-size: 13px; font-family: inherit; outline: none; width: 240px;
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--pink); }
+.search-wrap { position: relative; }
+.search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text3); }
+.table-meta { font-size: 12px; color: var(--text3); }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600;
+  color: var(--text3); text-transform: uppercase; letter-spacing: 0.7px;
+  border-bottom: 1px solid var(--border); background: var(--bg3);
+  white-space: nowrap;
+}
+thead th.sortable { cursor: pointer; user-select: none; }
+thead th.sortable:hover { color: var(--text2); }
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,0.025); }
+tbody tr.excluded-row { opacity: 0.45; }
+td { padding: 10px 14px; vertical-align: middle; }
+.td-drag {
+  width: 32px; cursor: grab; color: var(--text3); padding: 10px 8px;
+}
+.td-drag:active { cursor: grabbing; }
+.td-drag svg { display: block; }
+.product-thumb {
+  width: 42px; height: 52px; border-radius: 6px;
+  object-fit: cover; object-position: top; display: block;
+  background: var(--bg4);
+}
+.product-title-cell { min-width: 180px; max-width: 260px; }
+.product-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; }
+.product-type-badge {
+  display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px;
+  background: var(--bg4); border: 1px solid var(--border2); color: var(--text3);
+  margin-top: 4px; font-weight: 500;
+}
+.price-cell { font-weight: 600; color: var(--text); font-size: 13.5px; }
+.price-compare { color: var(--text3); font-size: 12px; text-decoration: line-through; font-weight: 400; margin-left: 5px; }
+.status-dot {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500;
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: var(--green); }
+.dot-red { background: var(--red); }
+.dot-yellow { background: #f59e0b; }
+.order-input {
+  width: 56px; background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text); border-radius: 6px; padding: 5px 8px;
+  font-size: 13px; font-family: inherit; text-align: center; outline: none;
+}
+.order-input:focus { border-color: var(--pink); }
+
+/* ====== PIN / BOOST / SUPPRESS ====== */
+.pbs-cell { white-space: nowrap; }
+.pbs-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pin-input-wrap { display: flex; align-items: center; gap: 4px; }
+.pin-input-wrap label { font-size: 11px; color: var(--text3); }
+.pin-input {
+  width: 46px; background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text); border-radius: 6px; padding: 4px 6px;
+  font-size: 12px; font-family: inherit; text-align: center; outline: none;
+}
+.pin-input:focus { border-color: #f59e0b; }
+.btn-pbs {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 4px 9px; border-radius: 6px; font-size: 11px; font-weight: 600;
+  cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
+  font-family: inherit; line-height: 1.4;
+}
+.btn-boost { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); color: #22c55e; }
+.btn-boost.active { background: #22c55e; color: #fff; border-color: #22c55e; }
+.btn-suppress { background: rgba(239,68,68,0.10); border-color: rgba(239,68,68,0.25); color: #ef4444; }
+.btn-suppress.active { background: #ef4444; color: #fff; border-color: #ef4444; }
+.pin-badge { font-size: 13px; }
+tbody tr.pinned-row td:first-child::before {
+  content: '📌'; font-size: 10px; margin-right: 4px; vertical-align: middle;
+}
+
+/* ====== TOGGLE SWITCH ====== */
+.toggle-switch { position: relative; width: 40px; height: 22px; cursor: pointer; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0; border-radius: 11px;
+  background: rgba(255,255,255,0.1); transition: background 0.2s;
+}
+.toggle-track::after {
+  content: ''; position: absolute; left: 3px; top: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: transform 0.2s;
+}
+.toggle-switch input:checked + .toggle-track { background: var(--pink); }
+.toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+
+/* ====== BUTTONS ====== */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.2s; font-family: inherit;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--pink), #ff6b6b);
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(233,30,140,0.3);
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-secondary {
+  background: var(--bg4); color: var(--text2);
+  border: 1px solid var(--border2);
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.btn-danger {
+  background: rgba(244,67,54,0.12); color: var(--red);
+  border: 1px solid rgba(244,67,54,0.3);
+}
+.btn-danger:hover { background: rgba(244,67,54,0.22); }
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 7px; }
+.btn-icon {
+  width: 32px; height: 32px; padding: 0; justify-content: center;
+  background: var(--bg4); color: var(--text2);
+  border: 1px solid var(--border2); border-radius: 7px;
+}
+.btn-icon:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+/* ====== SAVE BAR ====== */
+.save-bar {
+  display: none; align-items: center; justify-content: space-between;
+  padding: 13px 28px;
+  background: linear-gradient(90deg, rgba(233,30,140,0.12), rgba(255,107,107,0.08));
+  border-top: 1px solid rgba(233,30,140,0.25);
+  flex-shrink: 0;
+}
+.save-bar.visible { display: flex; }
+.save-bar-text { font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+.save-bar-text::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--pink); display: block; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ====== TOAST ====== */
+.toast {
+  position: fixed; top: 20px; right: 20px; z-index: 9999;
+  background: var(--bg4); border: 1px solid var(--border2);
+  color: var(--text); padding: 12px 18px; border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  opacity: 0; transform: translateX(20px);
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none; display: flex; align-items: center; gap: 8px;
+}
+.toast.show { opacity: 1; transform: translateX(0); }
+.toast.success { border-color: rgba(34,197,94,0.4); }
+.toast.error { border-color: rgba(244,67,54,0.4); }
+
+/* ====== PAGE-SPECIFIC ====== */
+.page { display: none; }
+.page.active { display: block; }
+
+/* Preview page */
+.preview-frame-wrap {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.preview-frame-bar {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg4);
+}
+.preview-frame-bar .url { font-size: 12px; color: var(--text3); background: var(--bg3); padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border); }
+.preview-iframe { width: 100%; border: none; background: #000; }
+
+/* Drag feedback */
+tbody tr.drag-over { background: rgba(233,30,140,0.08) !important; outline: 1px dashed rgba(233,30,140,0.4); }
+tbody tr.dragging { opacity: 0.4; }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .filter-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 800px) {
+  .sidebar { width: 52px; }
+  .logo-text, .logo-sub, .nav-section, .nav-item span, .sidebar-footer { display: none; }
+  .nav-item { justify-content: center; padding: 10px; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Select all checkbox cell */
+.cb-cell { width: 36px; }
+input[type=checkbox] { accent-color: var(--pink); width: 15px; height: 15px; cursor: pointer; }
+.bulk-bar {
+  display: none; align-items: center; gap: 12px;
+  padding: 10px 18px; background: var(--pink-light);
+  border-bottom: 1px solid rgba(233,30,140,0.2);
+  font-size: 13px; color: var(--text);
+}
+.bulk-bar.visible { display: flex; }
+.tag-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">♥</div>
+      <div>
+        <div class="logo-text">Silicon Wives</div>
+        <div class="logo-sub">Swipe App Admin</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Main</div>
+      <button class="nav-item active" onclick="showPage('dashboard')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" onclick="showPage('products')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        <span>Products</span>
+      </button>
+      <button class="nav-item" onclick="showPage('filters')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+        <span>Filters & Sort</span>
+      </button>
+      <button class="nav-item" onclick="showPage('preview')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        <span>Preview App</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="store-name">silicon-wife.myshopify.com</div>
+      <div id="sidebar-total">Loading...</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">Dashboard <span id="page-sub"></span></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary btn-sm" id="sync-btn" onclick="syncProducts()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          Sync Products
+        </button>
+        <button class="btn btn-primary btn-sm" id="save-btn" onclick="saveConfig()" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+          Save Changes
+        </button>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ===== DASHBOARD PAGE ===== -->
+      <div id="page-dashboard" class="page active">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Total Products</div>
+            <div class="stat-value" id="stat-total">—</div>
+            <div class="stat-sub">in your store</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Shown in App</div>
+            <div class="stat-value pink" id="stat-shown">—</div>
+            <div class="stat-sub">after filters applied</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Excluded</div>
+            <div class="stat-value" style="color:#f44336" id="stat-excluded">—</div>
+            <div class="stat-sub">hidden from app</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Sort Mode</div>
+            <div class="stat-value" style="font-size:16px; padding-top:6px" id="stat-sort">—</div>
+            <div class="stat-sub">current ordering</div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin-bottom:18px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--pink)"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            Quick Actions
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-secondary" onclick="showPage('products')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+              Manage Products
+            </button>
+            <button class="btn btn-secondary" onclick="showPage('filters')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+              Edit Filters
+            </button>
+            <button class="btn btn-secondary" onclick="showPage('preview')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z"/></svg>
+              Preview App
+            </button>
+            <button class="btn btn-danger" onclick="resetConfig()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8z"/></svg>
+              Reset to Defaults
+            </button>
+          </div>
+        </div>
+
+        <!-- Type breakdown -->
+        <div style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:14px;">Products by Type</div>
+          <div id="type-breakdown" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+      </div>
+
+      <!-- ===== PRODUCTS PAGE ===== -->
+      <div id="page-products" class="page">
+
+        <!-- Sort panel -->
+        <div class="filter-panel" style="margin-bottom:14px;">
+          <div class="filter-panel__title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--pink)"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+            Sort Order
+          </div>
+          <div class="sort-row" id="sort-options">
+            <div class="sort-option active" data-sort="custom" onclick="setSortMode('custom')">✦ Custom (drag)</div>
+            <div class="sort-option" data-sort="price_asc" onclick="setSortMode('price_asc')">Price ↑ Low–High</div>
+            <div class="sort-option" data-sort="price_desc" onclick="setSortMode('price_desc')">Price ↓ High–Low</div>
+            <div class="sort-option" data-sort="title_asc" onclick="setSortMode('title_asc')">Name A–Z</div>
+            <div class="sort-option" data-sort="type" onclick="setSortMode('type')">By Category</div>
+          </div>
+          <div id="drag-hint" style="font-size:12px; color:var(--text3); margin-top:10px;">
+            ✦ In custom mode, drag rows to reorder how products appear in the swipe app.
+          </div>
+        </div>
+
+        <!-- Product table -->
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <div class="search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+              <input type="text" class="search-input" placeholder="Search products..." oninput="searchProducts(this.value)" id="search-input">
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="table-meta" id="table-meta">Loading...</span>
+              <button class="btn btn-sm btn-secondary" onclick="toggleAllVisible()">Show All</button>
+              <button class="btn btn-sm btn-danger" onclick="excludeSelected()" id="bulk-exclude-btn" style="display:none">Exclude Selected</button>
+            </div>
+          </div>
+          <div class="bulk-bar" id="bulk-bar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--pink)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <span id="bulk-count">0 selected</span>
+            <button class="btn btn-sm btn-danger" onclick="excludeSelected()">Exclude Selected</button>
+            <button class="btn btn-sm btn-secondary" onclick="includeSelected()">Include Selected</button>
+            <button class="btn btn-sm btn-secondary" onclick="clearSelection()">Deselect All</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table id="products-table">
+              <thead>
+                <tr>
+                  <th class="cb-cell"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"></th>
+                  <th style="width:32px;"></th>
+                  <th style="width:52px;">Image</th>
+                  <th class="sortable" onclick="tableSortBy('title')">Product ↕</th>
+                  <th class="sortable" onclick="tableSortBy('type')">Type ↕</th>
+                  <th class="sortable" onclick="tableSortBy('price')">Price ↕</th>
+                  <th>Position</th>
+                  <th>Pin / Boost / Suppress</th>
+                  <th>Visible</th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== FILTERS PAGE ===== -->
+      <div id="page-filters" class="page">
+        <div class="filter-panel">
+          <div class="filter-panel__title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--pink)"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+            Category Filters
+            <span style="font-size:11px; color:var(--text3); font-weight:400; margin-left:4px;">Click to toggle visibility per category</span>
+          </div>
+          <div class="type-chips" id="type-chips"></div>
+        </div>
+
+        <div class="filter-panel">
+          <div class="filter-panel__title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--pink)"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+            Price Range Filter
+          </div>
+          <div class="filter-grid">
+            <div class="filter-group">
+              <label>Minimum Price</label>
+              <input type="range" id="min-price-range" min="0" max="3899" step="50" value="0" oninput="updatePriceFilter()">
+              <div class="price-inputs">
+                <input type="number" class="price-input" id="min-price-input" value="0" min="0" max="3899" onchange="syncPriceRange('min')" placeholder="$0">
+              </div>
+            </div>
+            <div class="filter-group">
+              <label>Maximum Price</label>
+              <input type="range" id="max-price-range" min="0" max="3899" step="50" value="3899" oninput="updatePriceFilter()">
+              <div class="price-inputs">
+                <input type="number" class="price-input" id="max-price-input" value="3899" min="0" max="3899" onchange="syncPriceRange('max')" placeholder="$3899">
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:12px; font-size:12px; color:var(--text3);">
+            Showing products priced between <strong id="price-range-display" style="color:var(--text2);">$0 – $3,899</strong>
+          </div>
+        </div>
+
+        <div class="filter-panel">
+          <div class="filter-panel__title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--pink)"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            Sort Order
+          </div>
+          <div class="sort-row" id="sort-options-2">
+            <div class="sort-option" data-sort="custom" onclick="setSortMode('custom')">✦ Custom (drag)</div>
+            <div class="sort-option" data-sort="price_asc" onclick="setSortMode('price_asc')">Price ↑ Low–High</div>
+            <div class="sort-option" data-sort="price_desc" onclick="setSortMode('price_desc')">Price ↓ High–Low</div>
+            <div class="sort-option" data-sort="title_asc" onclick="setSortMode('title_asc')">Name A–Z</div>
+            <div class="sort-option" data-sort="type" onclick="setSortMode('type')">By Category</div>
+          </div>
+        </div>
+
+        <!-- Preview of active filters -->
+        <div style="background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px;">
+          <div style="font-size:13px; font-weight:600; margin-bottom:12px;">Active Filters Summary</div>
+          <div id="filter-summary" style="font-size:13px; color:var(--text2); line-height:1.8;"></div>
+        </div>
+      </div>
+
+      <!-- ===== PREVIEW PAGE ===== -->
+      <div id="page-preview" class="page">
+        <div style="margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:13px; color:var(--text2);">Live preview of the swipe app with your current configuration.</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="reloadPreview()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8z"/></svg>
+              Reload
+            </button>
+            <a class="btn btn-primary btn-sm" href="/swipe?shop=__SHOP__" target="_blank">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+              Open Full Screen
+            </a>
+          </div>
+        </div>
+        <div class="preview-frame-wrap" style="height: calc(100vh - 220px);">
+          <div class="preview-frame-bar">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <div style="width:10px; height:10px; border-radius:50%; background:#ff5f56;"></div>
+              <div style="width:10px; height:10px; border-radius:50%; background:#ffbd2e;"></div>
+              <div style="width:10px; height:10px; border-radius:50%; background:#27c93f;"></div>
+            </div>
+            <span class="url">silicon-wife.myshopify.com — Swipe App</span>
+            <button class="btn btn-icon" onclick="reloadPreview()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6c0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8z"/></svg>
+            </button>
+          </div>
+          <iframe id="preview-iframe" class="preview-iframe" src="/swipe?shop=__SHOP__" style="height:calc(100% - 44px);"></iframe>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+
+    <!-- SAVE BAR -->
+    <div class="save-bar" id="save-bar">
+      <div class="save-bar-text">You have unsaved changes</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="discardChanges()">Discard</button>
+        <button class="btn btn-primary btn-sm" onclick="saveConfig()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+          Save & Apply
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+let allProducts = [];
+let config = { sort_mode: 'custom', product_order: [], filters: { excluded_types: [], excluded_ids: [], min_price: 0, max_price: 3899 }, pinned_positions: {}, boosts: [], suppressed: [], last_updated: null };
+let filteredTable = [];
+let hasUnsaved = false;
+let selectedIds = new Set();
+let dragSrcRow = null;
+let tableSearchQuery = '';
+let tableSortKey = null;
+let tableSortDir = 1;
+
+const API = ''; // relative
+const SHOP = '__SHOP__';
+
+// ===== INIT =====
+async function init() {
+  await loadConfig();
+  await loadProducts();
+  renderDashboard();
+  renderProductTable();
+  renderTypeChips();
+  updateFilterSummary();
+  updateSortUI();
+  return true;
+}
+
+async function loadConfig() {
+  try {
+    const r = await fetch(`${API}/api/config?shop=${SHOP}`);
+    const loaded = await r.json();
+    // Ensure new fields have defaults if missing from older config
+    config = Object.assign({ pinned_positions: {}, boosts: [], suppressed: [] }, loaded);
+    syncUIFromConfig();
+  } catch(e) { console.error('Config load error', e); }
+}
+
+async function loadProducts() {
+  try {
+    const r = await fetch(`${API}/api/products?shop=${SHOP}`);
+    const data = await r.json();
+    allProducts = data.products || [];
+  } catch(e) { console.error('Products load error', e); }
+}
+
+function syncUIFromConfig() {
+  // Price
+  const min = config.filters?.min_price || 0;
+  const max = config.filters?.max_price || 3899;
+  document.getElementById('min-price-range').value = min;
+  document.getElementById('max-price-range').value = max;
+  document.getElementById('min-price-input').value = min;
+  document.getElementById('max-price-input').value = max;
+  updatePriceDisplay();
+  updateSortUI();
+}
+
+// ===== PAGES =====
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  document.querySelector(`[onclick="showPage('${id}')"]`).classList.add('active');
+  const titles = { dashboard: 'Dashboard', products: 'Products', filters: 'Filters & Sort', preview: 'Preview App' };
+  document.getElementById('page-title').textContent = titles[id] || id;
+  document.getElementById('page-sub').textContent = '';
+  if (id === 'products') renderProductTable();
+  if (id === 'filters') { renderTypeChips(); updateFilterSummary(); }
+  if (id === 'preview') reloadPreview();
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const excluded_ids = new Set(config.filters?.excluded_ids || []);
+  const excluded_types = new Set(config.filters?.excluded_types || []);
+  const min_p = parseFloat(config.filters?.min_price || 0);
+  const max_p = parseFloat(config.filters?.max_price || 999999);
+
+  const shown = allProducts.filter(p => {
+    if (excluded_ids.has(p.id)) return false;
+    if (excluded_types.has(p.type)) return false;
+    const price = parseFloat(p.price || 0);
+    if (price < min_p || price > max_p) return false;
+    return true;
+  });
+
+  document.getElementById('stat-total').textContent = allProducts.length;
+  document.getElementById('stat-shown').textContent = shown.length;
+  document.getElementById('stat-excluded').textContent = allProducts.length - shown.length;
+  const sortLabels = { custom: 'Custom', price_asc: 'Price ↑', price_desc: 'Price ↓', title_asc: 'Name A–Z', type: 'By Type' };
+  document.getElementById('stat-sort').textContent = sortLabels[config.sort_mode] || config.sort_mode;
+
+  // Type breakdown
+  const typeCounts = {};
+  allProducts.forEach(p => { typeCounts[p.type || 'No Type'] = (typeCounts[p.type || 'No Type'] || 0) + 1; });
+  const breakdown = document.getElementById('type-breakdown');
+  const maxCount = Math.max(...Object.values(typeCounts));
+  breakdown.innerHTML = Object.entries(typeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, count]) => {
+      const isExcluded = excluded_types.has(type);
+      const pct = Math.round(count / maxCount * 100);
+      return `<div style="display:flex; align-items:center; gap:10px;">
+        <div style="width:130px; font-size:12px; color:${isExcluded ? 'var(--red)' : 'var(--text2)'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${isExcluded ? 'text-decoration:line-through;' : ''}">${type}</div>
+        <div style="flex:1; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden;">
+          <div style="height:100%; width:${pct}%; background:${isExcluded ? 'var(--red)' : 'linear-gradient(90deg,var(--pink),#ff6b6b)'}; border-radius:3px; opacity:${isExcluded?0.4:1};"></div>
+        </div>
+        <div style="font-size:12px; color:var(--text3); min-width:28px; text-align:right;">${count}</div>
+      </div>`;
+    }).join('');
+}
+
+// ===== PRODUCT TABLE =====
+function renderProductTable() {
+  const excluded_ids = new Set(config.filters?.excluded_ids || []);
+  const excluded_types = new Set(config.filters?.excluded_types || []);
+  const order = config.product_order || [];
+  const orderMap = Object.fromEntries(order.map((id, i) => [id, i]));
+  // Pin/boost/suppress sets
+  const boostSet = new Set((config.boosts || []).map(Number));
+  const suppressSet = new Set((config.suppressed || []).map(Number));
+  const pinnedPositions = config.pinned_positions || {}; // {"1": id, "5": id}
+  const pinnedIds = new Set(Object.values(pinnedPositions).map(Number));
+
+  // Sort by current order
+  let products = [...allProducts];
+  if (config.sort_mode === 'custom' && order.length > 0) {
+    products.sort((a, b) => {
+      const ia = orderMap[a.id] ?? 99999;
+      const ib = orderMap[b.id] ?? 99999;
+      return ia - ib;
+    });
+  } else if (config.sort_mode === 'price_asc') products.sort((a,b) => parseFloat(a.price)-parseFloat(b.price));
+  else if (config.sort_mode === 'price_desc') products.sort((a,b) => parseFloat(b.price)-parseFloat(a.price));
+  else if (config.sort_mode === 'title_asc') products.sort((a,b) => a.title.localeCompare(b.title));
+  else if (config.sort_mode === 'type') products.sort((a,b) => (a.type||'').localeCompare(b.type||'') || a.title.localeCompare(b.title));
+
+  // Apply table sort
+  if (tableSortKey) {
+    products.sort((a, b) => {
+      let va = a[tableSortKey] || '';
+      let vb = b[tableSortKey] || '';
+      if (tableSortKey === 'price') { va = parseFloat(va); vb = parseFloat(vb); }
+      return (va > vb ? 1 : va < vb ? -1 : 0) * tableSortDir;
+    });
+  }
+
+  // Search filter
+  const q = tableSearchQuery.toLowerCase();
+  filteredTable = q ? products.filter(p => p.title.toLowerCase().includes(q) || (p.type||'').toLowerCase().includes(q)) : products;
+
+  const tbody = document.getElementById('products-tbody');
+  tbody.innerHTML = '';
+
+  filteredTable.forEach((product, idx) => {
+    const isExcluded = excluded_ids.has(product.id) || excluded_types.has(product.type);
+    const isSelected = selectedIds.has(product.id);
+    const price = parseFloat(product.price).toFixed(2);
+    const posInOrder = order.indexOf(product.id);
+
+    const isBoosted   = boostSet.has(Number(product.id));
+    const isSuppressed = suppressSet.has(Number(product.id));
+    const isPinned    = pinnedIds.has(Number(product.id));
+    // Find which position this product is pinned to (if any)
+    const pinnedToPos = Object.entries(pinnedPositions).find(([pos, pid]) => Number(pid) === Number(product.id))?.[0] || '';
+
+    const tr = document.createElement('tr');
+    tr.dataset.productId = product.id;
+    if (isExcluded) tr.classList.add('excluded-row');
+    if (isPinned) tr.classList.add('pinned-row');
+    if (config.sort_mode === 'custom') tr.setAttribute('draggable', true);
+
+    tr.innerHTML = `
+      <td class="cb-cell"><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelect(${product.id}, this)"></td>
+      <td class="td-drag" title="Drag to reorder">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:${config.sort_mode==='custom'?'block':'none'}">
+          <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+        </svg>
+      </td>
+      <td><img class="product-thumb" src="${product.image}" alt="" onerror="this.style.display='none'"></td>
+      <td class="product-title-cell">
+        <div class="product-title">${product.title}</div>
+      </td>
+      <td><span class="product-type-badge">${product.type || '—'}</span></td>
+      <td class="price-cell">
+        $${price}
+        ${product.compare_at ? `<span class="price-compare">$${parseFloat(product.compare_at).toFixed(2)}</span>` : ''}
+      </td>
+      <td>
+        <input class="order-input" type="number" value="${posInOrder >= 0 ? posInOrder + 1 : idx + 1}" min="1" 
+          onchange="setProductPosition(${product.id}, parseInt(this.value)-1)"
+          style="display:${config.sort_mode==='custom'?'block':'none'}">
+        <span style="font-size:12px; color:var(--text3); display:${config.sort_mode!=='custom'?'block':'none'}">${config.sort_mode === 'custom' ? '' : 'Auto'}</span>
+      </td>
+      <td class="pbs-cell">
+        <div class="pbs-row">
+          <div class="pin-input-wrap" title="Pin to exact swipe position (1-based). Leave blank to unpin.">
+            <span class="pin-badge">📌</span>
+            <input class="pin-input" type="number" min="1" placeholder="pos"
+              value="${pinnedToPos}"
+              onchange="setPinnedPosition(${product.id}, this.value)"
+              title="Pin to position #">
+          </div>
+          <button class="btn-pbs btn-boost ${isBoosted ? 'active' : ''}"
+            onclick="toggleBoost(${product.id})"
+            title="Boost: floats this product up in AI ranking">
+            ⬆ Boost
+          </button>
+          <button class="btn-pbs btn-suppress ${isSuppressed ? 'active' : ''}"
+            onclick="toggleSuppress(${product.id})"
+            title="Suppress: sinks this product to the bottom">
+            ⬇ Suppress
+          </button>
+        </div>
+      </td>
+      <td>
+        <label class="toggle-switch">
+          <input type="checkbox" ${!isExcluded ? 'checked' : ''} onchange="toggleProductVisible(${product.id}, this.checked)">
+          <div class="toggle-track"></div>
+        </label>
+      </td>
+    `;
+
+    if (config.sort_mode === 'custom') {
+      tr.addEventListener('dragstart', onDragStart);
+      tr.addEventListener('dragover', onDragOver);
+      tr.addEventListener('drop', onDrop);
+      tr.addEventListener('dragend', onDragEnd);
+      tr.addEventListener('dragleave', onDragLeave);
+    }
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('table-meta').textContent = `${filteredTable.length} of ${allProducts.length} products`;
+  updateBulkBar();
+}
+
+// ===== DRAG & DROP REORDER =====
+function onDragStart(e) {
+  dragSrcRow = this;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', this.dataset.productId);
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('drag-over'));
+  this.classList.add('drag-over');
+}
+function onDragLeave() { this.classList.remove('drag-over'); }
+function onDragEnd() {
+  this.classList.remove('dragging');
+  document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('drag-over'));
+}
+function onDrop(e) {
+  e.preventDefault();
+  if (dragSrcRow === this) return;
+  const tbody = document.getElementById('products-tbody');
+  const rows = [...tbody.querySelectorAll('tr')];
+  const srcIdx = rows.indexOf(dragSrcRow);
+  const tgtIdx = rows.indexOf(this);
+  if (srcIdx < tgtIdx) tbody.insertBefore(dragSrcRow, this.nextSibling);
+  else tbody.insertBefore(dragSrcRow, this);
+  // Update order from DOM
+  const newOrder = [...tbody.querySelectorAll('tr')].map(r => parseInt(r.dataset.productId));
+  config.product_order = newOrder;
+  markUnsaved();
+  // Update position numbers
+  tbody.querySelectorAll('tr').forEach((r, i) => {
+    const inp = r.querySelector('.order-input');
+    if (inp) inp.value = i + 1;
+  });
+}
+
+// ===== PRODUCT VISIBILITY =====
+function toggleProductVisible(productId, visible) {
+  if (!config.filters) config.filters = {};
+  if (!config.filters.excluded_ids) config.filters.excluded_ids = [];
+  if (visible) {
+    config.filters.excluded_ids = config.filters.excluded_ids.filter(id => id !== productId);
+  } else {
+    if (!config.filters.excluded_ids.includes(productId)) {
+      config.filters.excluded_ids.push(productId);
+    }
+  }
+  markUnsaved();
+}
+
+function setProductPosition(productId, newPos) {
+  if (!config.product_order) config.product_order = allProducts.map(p => p.id);
+  const order = [...config.product_order];
+  const currentPos = order.indexOf(productId);
+  if (currentPos !== -1) order.splice(currentPos, 1);
+  const clampedPos = Math.max(0, Math.min(newPos, order.length));
+  order.splice(clampedPos, 0, productId);
+  config.product_order = order;
+  markUnsaved();
+  setTimeout(renderProductTable, 100);
+}
+
+// ===== PIN / BOOST / SUPPRESS =====
+function setPinnedPosition(productId, posValue) {
+  if (!config.pinned_positions) config.pinned_positions = {};
+  const pid = Number(productId);
+  // Remove any existing pin for this product
+  Object.keys(config.pinned_positions).forEach(function(pos) {
+    if (Number(config.pinned_positions[pos]) === pid) delete config.pinned_positions[pos];
+  });
+  const pos = parseInt(posValue);
+  if (!isNaN(pos) && pos >= 1) {
+    config.pinned_positions[String(pos)] = pid;
+    showToast(`📌 Pinned to position #${pos}`, 'success');
+  } else if (posValue === '' || posValue === '0') {
+    showToast('📌 Pin removed', '');
+  }
+  markUnsaved();
+  renderProductTable();
+}
+
+function toggleBoost(productId) {
+  if (!config.boosts) config.boosts = [];
+  const pid = Number(productId);
+  const idx = config.boosts.indexOf(pid);
+  if (idx >= 0) {
+    config.boosts.splice(idx, 1);
+    // also remove as string in case of type mismatch
+    const sidx = config.boosts.indexOf(productId);
+    if (sidx >= 0) config.boosts.splice(sidx, 1);
+    showToast('⬆ Boost removed', '');
+  } else {
+    config.boosts.push(pid);
+    // Also remove from suppressed if present
+    if (config.suppressed) {
+      config.suppressed = config.suppressed.filter(id => Number(id) !== pid);
+    }
+    showToast('⬆ Product boosted — will surface in AI ranking', 'success');
+  }
+  markUnsaved();
+  renderProductTable();
+}
+
+function toggleSuppress(productId) {
+  if (!config.suppressed) config.suppressed = [];
+  const pid = Number(productId);
+  const idx = config.suppressed.indexOf(pid);
+  if (idx >= 0) {
+    config.suppressed.splice(idx, 1);
+    const sidx = config.suppressed.indexOf(productId);
+    if (sidx >= 0) config.suppressed.splice(sidx, 1);
+    showToast('⬇ Suppress removed', '');
+  } else {
+    config.suppressed.push(pid);
+    // Also remove from boosts if present
+    if (config.boosts) {
+      config.boosts = config.boosts.filter(id => Number(id) !== pid);
+    }
+    showToast('⬇ Product suppressed — will sink to bottom', '');
+  }
+  markUnsaved();
+  renderProductTable();
+}
+
+// ===== BULK SELECTION =====
+function toggleSelect(productId, cb) {
+  if (cb.checked) selectedIds.add(productId);
+  else selectedIds.delete(productId);
+  updateBulkBar();
+}
+function toggleSelectAll(cb) {
+  if (cb.checked) filteredTable.forEach(p => selectedIds.add(p.id));
+  else selectedIds.clear();
+  renderProductTable();
+}
+function updateBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  document.getElementById('bulk-count').textContent = `${selectedIds.size} selected`;
+  bar.classList.toggle('visible', selectedIds.size > 0);
+}
+function clearSelection() { selectedIds.clear(); renderProductTable(); }
+function excludeSelected() {
+  if (!config.filters) config.filters = {};
+  if (!config.filters.excluded_ids) config.filters.excluded_ids = [];
+  selectedIds.forEach(id => { if (!config.filters.excluded_ids.includes(id)) config.filters.excluded_ids.push(id); });
+  clearSelection();
+  markUnsaved();
+  renderProductTable();
+}
+function includeSelected() {
+  if (!config.filters?.excluded_ids) return;
+  config.filters.excluded_ids = config.filters.excluded_ids.filter(id => !selectedIds.has(id));
+  clearSelection();
+  markUnsaved();
+  renderProductTable();
+}
+function toggleAllVisible() {
+  config.filters = config.filters || {};
+  config.filters.excluded_ids = [];
+  config.filters.excluded_types = [];
+  markUnsaved();
+  renderProductTable();
+  renderTypeChips();
+  showToast('✓ All products set to visible', 'success');
+}
+
+// ===== SEARCH =====
+function searchProducts(q) { tableSearchQuery = q; renderProductTable(); }
+
+// ===== TABLE SORT =====
+function tableSortBy(key) {
+  if (tableSortKey === key) tableSortDir *= -1;
+  else { tableSortKey = key; tableSortDir = 1; }
+  renderProductTable();
+}
+
+// ===== TYPE FILTER CHIPS =====
+function renderTypeChips() {
+  const types = [...new Set(allProducts.map(p => p.type || '').filter(Boolean))].sort();
+  const excluded = new Set(config.filters?.excluded_types || []);
+  const container = document.getElementById('type-chips');
+  container.innerHTML = types.map(t => `
+    <div class="type-chip ${excluded.has(t) ? 'excluded' : 'included'}" onclick="toggleTypeFilter('${t}')" data-type="${t}">
+      ${t} (${allProducts.filter(p => p.type === t).length})
+    </div>
+  `).join('');
+}
+
+function toggleTypeFilter(type) {
+  if (!config.filters) config.filters = {};
+  if (!config.filters.excluded_types) config.filters.excluded_types = [];
+  const idx = config.filters.excluded_types.indexOf(type);
+  if (idx >= 0) config.filters.excluded_types.splice(idx, 1);
+  else config.filters.excluded_types.push(type);
+  renderTypeChips();
+  updateFilterSummary();
+  markUnsaved();
+}
+
+// ===== PRICE FILTER =====
+function updatePriceFilter() {
+  const min = parseInt(document.getElementById('min-price-range').value);
+  const max = parseInt(document.getElementById('max-price-range').value);
+  document.getElementById('min-price-input').value = min;
+  document.getElementById('max-price-input').value = max;
+  if (!config.filters) config.filters = {};
+  config.filters.min_price = min;
+  config.filters.max_price = max;
+  updatePriceDisplay();
+  updateFilterSummary();
+  markUnsaved();
+}
+
+function syncPriceRange(type) {
+  const min = parseInt(document.getElementById('min-price-input').value) || 0;
+  const max = parseInt(document.getElementById('max-price-input').value) || 3899;
+  if (type === 'min') document.getElementById('min-price-range').value = min;
+  if (type === 'max') document.getElementById('max-price-range').value = max;
+  if (!config.filters) config.filters = {};
+  config.filters.min_price = min;
+  config.filters.max_price = max;
+  updatePriceDisplay();
+  updateFilterSummary();
+  markUnsaved();
+}
+
+function updatePriceDisplay() {
+  const min = parseInt(document.getElementById('min-price-range').value);
+  const max = parseInt(document.getElementById('max-price-range').value);
+  document.getElementById('price-range-display').textContent = `$${min.toLocaleString()} – $${max.toLocaleString()}`;
+}
+
+// ===== SORT MODE =====
+function setSortMode(mode) {
+  config.sort_mode = mode;
+  updateSortUI();
+  markUnsaved();
+  renderProductTable();
+  updateFilterSummary();
+}
+
+function updateSortUI() {
+  document.querySelectorAll('.sort-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.sort === config.sort_mode);
+  });
+  const hint = document.getElementById('drag-hint');
+  if (hint) hint.style.display = config.sort_mode === 'custom' ? 'block' : 'none';
+}
+
+// ===== FILTER SUMMARY =====
+function updateFilterSummary() {
+  const excluded_types = config.filters?.excluded_types || [];
+  const excluded_ids = config.filters?.excluded_ids || [];
+  const min_p = config.filters?.min_price || 0;
+  const max_p = config.filters?.max_price || 3899;
+  const sortLabels = { custom: 'Custom drag order', price_asc: 'Price: Low → High', price_desc: 'Price: High → Low', title_asc: 'Name: A–Z', type: 'By Category' };
+
+  document.getElementById('filter-summary').innerHTML = `
+    <div>📦 <strong>${allProducts.length}</strong> total products in store</div>
+    <div>🚫 <strong>${excluded_types.length}</strong> excluded categories: ${excluded_types.length ? excluded_types.map(t=>`<span style="background:rgba(244,67,54,0.15);padding:1px 7px;border-radius:10px;font-size:11px;">${t}</span>`).join(' ') : 'none'}</div>
+    <div>🙈 <strong>${excluded_ids.length}</strong> individually excluded products</div>
+    <div>💰 Price range: <strong>$${min_p.toLocaleString()} – $${max_p.toLocaleString()}</strong></div>
+    <div>🔀 Sort: <strong>${sortLabels[config.sort_mode] || config.sort_mode}</strong></div>
+  `;
+}
+
+// ===== UNSAVED STATE =====
+function markUnsaved() {
+  hasUnsaved = true;
+  document.getElementById('save-bar').classList.add('visible');
+  document.getElementById('save-btn').disabled = false;
+  renderDashboard();
+}
+
+function discardChanges() {
+  hasUnsaved = false;
+  document.getElementById('save-bar').classList.remove('visible');
+  document.getElementById('save-btn').disabled = true;
+  loadConfig().then(() => {
+    renderProductTable();
+    renderTypeChips();
+    updateFilterSummary();
+    renderDashboard();
+  });
+  showToast('Changes discarded', '');
+}
+
+// ===== SAVE =====
+async function saveConfig() {
+  try {
+    const r = await fetch(`${API}/api/config?shop=${SHOP}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    const result = await r.json();
+    if (result.success) {
+      hasUnsaved = false;
+      document.getElementById('save-bar').classList.remove('visible');
+      document.getElementById('save-btn').disabled = true;
+      showToast('✓ Configuration saved & applied to app!', 'success');
+      renderDashboard();
+    }
+  } catch(e) {
+    showToast('❌ Save failed: ' + e.message, 'error');
+  }
+}
+
+// ===== SYNC PRODUCTS =====
+async function syncProducts() {
+  const btn = document.getElementById('sync-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="animation:spin 1s linear infinite"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8z"/></svg> Syncing all pages...';
+  showToast('⟳ Fetching all products from Shopify (may take ~30s for large stores)...', '');
+  try {
+    const r = await fetch(`${API}/api/sync?shop=${SHOP}`, { method: 'POST' });
+    const result = await r.json();
+    if (result.success) {
+      await loadProducts();
+      renderProductTable();
+      renderTypeChips();
+      renderDashboard();
+      updateSidebarTotal();
+      showToast(`✓ Synced ${result.total.toLocaleString()} products from Shopify!`, 'success');
+    } else {
+      showToast('❌ Sync error: ' + (result.error || 'unknown'), 'error');
+    }
+  } catch(e) {
+    showToast('❌ Sync failed: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Sync Products';
+}
+
+function updateSidebarTotal() {
+  const el = document.getElementById('sidebar-total');
+  if (el && allProducts.length) el.textContent = allProducts.length.toLocaleString() + ' total products';
+}
+
+// ===== RESET =====
+async function resetConfig() {
+  if (!confirm('Reset all filters and ordering to defaults?')) return;
+  const r = await fetch(`${API}/api/config/reset?shop=${SHOP}`, { method: 'POST' });
+  const result = await r.json();
+  if (result.success) {
+    await loadConfig();
+    hasUnsaved = false;
+    document.getElementById('save-bar').classList.remove('visible');
+    document.getElementById('save-btn').disabled = true;
+    renderProductTable();
+    renderTypeChips();
+    updateFilterSummary();
+    renderDashboard();
+    showToast('✓ Reset to defaults', 'success');
+  }
+}
+
+// ===== PREVIEW =====
+function reloadPreview() {
+  const iframe = document.getElementById('preview-iframe');
+  if (iframe) iframe.src = '/swipe?shop=__SHOP__&_=' + Date.now();
+}
+
+// ===== TOAST =====
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ` ${type}` : '');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Spin animation for sync button
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+document.head.appendChild(spinStyle);
+
+// ===== START =====
+init().then(() => updateSidebarTotal());
+</script>
+</body>
+</html>
