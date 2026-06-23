@@ -315,18 +315,18 @@ app.get('/api/products', requireAuth, async (req, res) => {
 app.post('/api/sync', requireAuth, async (req, res) => {
   try {
     console.log(`[Sync] Starting for ${req.shop}...`);
-    const products = await fetchAllProducts(req.shop, req.token);
+    const products = await fetchAllProducts(req.shop, req.token, true); // force refresh
 
-    // Compute smart order
-    const smartOrder = computeSmartOrder(products);
+    // Fetch inventory scores for smart ordering
+    console.log(`[Sync] Fetching inventory scores...`);
+    const invData = await fetchInventoryScores(req.shop, req.token);
+
+    // Compute proper smart order
+    const smartOrder = computeSmartOrder(products, invData);
     const config = loadConfig(req.shop);
     config.product_order = smartOrder;
     config.sort_mode = 'smart';
     saveConfig(req.shop, config);
-
-    // Cache products
-    const cacheFile = path.join(DATA_DIR, `products_${req.shop.replace(/[^a-z0-9]/gi,'_')}.json`);
-    fs.writeFileSync(cacheFile, JSON.stringify(products));
 
     console.log(`[Sync] Done — ${products.length} products, smart order computed`);
     res.json({ success: true, total: products.length });
@@ -403,10 +403,10 @@ app.get('/', (req, res) => {
 
 // ── Shopify Product Fetching ──────────────────────────────────────────────────
 
-async function fetchAllProducts(shop, token) {
+async function fetchAllProducts(shop, token, forceRefresh = false) {
   // Check cache (max 1 hour old)
   const cacheFile = path.join(DATA_DIR, `products_${shop.replace(/[^a-z0-9]/gi,'_')}.json`);
-  if (fs.existsSync(cacheFile)) {
+  if (!forceRefresh && fs.existsSync(cacheFile)) {
     const stat = fs.statSync(cacheFile);
     const ageMs = Date.now() - stat.mtimeMs;
     if (ageMs < 60 * 60 * 1000) { // 1 hour cache
@@ -514,15 +514,104 @@ async function fetchVideoMedia(shop, token, productIds) {
 
 // ── Smart Order & Config ──────────────────────────────────────────────────────
 
-function computeSmartOrder(products) {
-  return products
-    .map(p => ({
-      id: p.id,
-      score: (parseFloat(p.compare_at || 0) > parseFloat(p.price || 0) ? 100 : 0) +
-             (p.images?.length || 0) * 10
-    }))
-    .sort((a, b) => b.score - a.score)
-    .map(p => p.id);
+async function fetchInventoryScores(shop, token) {
+  // Fetch totalInventory + createdAt + updatedAt for all products via GraphQL
+  const result = {};
+  let cursor = null;
+  let page = 1;
+  while (true) {
+    const after = cursor ? `, after: "${cursor}"` : '';
+    const query = `{
+      products(first: 250${after}) {
+        pageInfo { hasNextPage endCursor }
+        edges { node { id totalInventory createdAt updatedAt } }
+      }
+    }`;
+    try {
+      const data = await shopifyGraphQL(shop, token, query);
+      const conn = data?.data?.products;
+      if (!conn) break;
+      for (const edge of (conn.edges || [])) {
+        const n = edge.node;
+        const pid = parseInt(n.id.split('/').pop());
+        result[pid] = {
+          inventory:  n.totalInventory,
+          created_at: n.createdAt,
+          updated_at: n.updatedAt
+        };
+      }
+      if (!conn.pageInfo.hasNextPage) break;
+      cursor = conn.pageInfo.endCursor;
+      page++;
+      await sleep(300);
+    } catch(e) {
+      console.warn(`[Inventory] GraphQL error page ${page}:`, e.message);
+      break;
+    }
+  }
+  console.log(`[Inventory] Got scores for ${Object.keys(result).length} products`);
+  return result;
+}
+
+function computeSmartOrder(products, invData = {}) {
+  // Port of original Python algorithm:
+  // 40% recency (newest first) + 40% sales proxy (inventory) + 20% freshness (recently updated)
+  const NOW = Date.now();
+  const MS_PER_DAY = 86400000;
+
+  // Compute age range for normalisation
+  const ages = [];
+  for (const p of products) {
+    const inv = invData[p.id] || {};
+    if (inv.created_at) {
+      const age = Math.max(0, (NOW - new Date(inv.created_at).getTime()) / MS_PER_DAY);
+      ages.push(age);
+    }
+  }
+  const maxAge = ages.length ? Math.max(...ages) : 3650;
+  const minAge = ages.length ? Math.min(...ages) : 0;
+
+  const scored = products.map(p => {
+    const inv = invData[p.id] || {};
+    const inventory  = inv.inventory  ?? 0;
+    const createdAt  = inv.created_at ? new Date(inv.created_at).getTime() : null;
+    const updatedAt  = inv.updated_at ? new Date(inv.updated_at).getTime() : null;
+
+    // 1. Recency score 0→1 (newest = 1.0)
+    let recency = 0;
+    if (createdAt) {
+      const age = Math.max(0, (NOW - createdAt) / MS_PER_DAY);
+      recency = 1.0 - (age - minAge) / Math.max(maxAge - minAge, 1);
+    }
+
+    // 2. Sales proxy via inventory:
+    //    negative (oversold) → 1.0–1.5  best seller
+    //    zero                → 0.5       unknown
+    //    positive            → 0–0.4     in stock, less urgency
+    let sales;
+    if (inventory < 0) {
+      sales = 1.0 + Math.min(Math.abs(inventory) / 100.0, 1.0) * 0.5;
+    } else if (inventory === 0) {
+      sales = 0.5;
+    } else {
+      sales = Math.max(0, 0.4 - (inventory / 65.0) * 0.4);
+    }
+
+    // 3. Freshness boost — recently updated products
+    let freshness = 0;
+    if (updatedAt) {
+      const daysSince = (NOW - updatedAt) / MS_PER_DAY;
+      if (daysSince <= 30)  freshness = 0.15;
+      else if (daysSince <= 90) freshness = 0.08;
+    }
+
+    // Weighted composite: 40% recency + 40% sales proxy + 20% freshness
+    const score = 0.40 * recency + 0.40 * sales + 0.20 * freshness;
+    return { id: p.id, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map(p => p.id);
 }
 
 function applyConfig(products, config) {
