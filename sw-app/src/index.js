@@ -112,54 +112,106 @@ async function shopifyGraphQL(shop, token, query) {
 
 // ── OAuth ────────────────────────────────────────────────────────────────────
 
-// Debug endpoint — shows exactly what redirect URI the app will use
+// Debug — shows exact values in use
 app.get('/debug', (req, res) => {
   const redirectUri = `${APP_URL}/auth/callback`;
-  res.send(`
-    <pre>
-APP_URL      = ${APP_URL}
-REDIRECT_URI = ${redirectUri}
-API_KEY set  = ${SHOPIFY_API_KEY ? 'YES (' + SHOPIFY_API_KEY.slice(0,6) + '...)' : 'NO — missing!'}
-SECRET set   = ${SHOPIFY_API_SECRET ? 'YES' : 'NO — missing!'}
+  // Build exactly what /auth will send to Shopify
+  const exampleShop = 'example.myshopify.com';
+  const exampleInstallUrl = `https://${exampleShop}/admin/oauth/authorize`
+    + `?client_id=${SHOPIFY_API_KEY}`
+    + `&scope=${SCOPES}`
+    + `&redirect_uri=${redirectUri}`
+    + `&state=RANDOM_STATE`;
 
-The value you must paste into Shopify Partner Dashboard
-under "Allowed redirection URL(s)":
-
-  ${redirectUri}
-
-(exactly that — no trailing slash, no query params)
-    </pre>
-  `);
+  res.type('text/plain').send([
+    `APP_URL       = ${APP_URL}`,
+    `REDIRECT_URI  = ${redirectUri}`,
+    `API_KEY set   = ${SHOPIFY_API_KEY ? 'YES (' + SHOPIFY_API_KEY.slice(0,6) + '...)' : '❌ MISSING'}`,
+    `SECRET set    = ${SHOPIFY_API_SECRET ? 'YES' : '❌ MISSING'}`,
+    ``,
+    `Paste this EXACTLY into Shopify Partner Dashboard → Allowed redirection URL(s):`,
+    ``,
+    `  ${redirectUri}`,
+    ``,
+    `Example install URL that will be sent to Shopify:`,
+    `  ${exampleInstallUrl}`,
+  ].join('\n'));
 });
 
-// Step 1: Begin OAuth
+// Step 1: Begin OAuth — show confirm page first so redirect URI is visible
 app.get('/auth', (req, res) => {
   let shop = req.query.shop || '';
   if (!shop) return res.status(400).send('Missing shop parameter');
 
-  // Normalise — ensure .myshopify.com suffix, strip https://
-  shop = shop.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  if (!shop.includes('.myshopify.com')) shop = shop + '.myshopify.com';
+  // Normalise shop
+  shop = shop.replace(/^https?:\/\//i, '').replace(/\/$/, '').trim();
+  if (!shop.includes('.')) shop = `${shop}.myshopify.com`;
 
   const state = crypto.randomBytes(16).toString('hex');
   req.session.oauthState = state;
   req.session.oauthShop  = shop;
 
-  // redirectUri: plain URL, no query params, no encoding
   const redirectUri = `${APP_URL}/auth/callback`;
 
-  const params = new URLSearchParams({
-    client_id:    SHOPIFY_API_KEY,
-    scope:        SCOPES,
-    redirect_uri: redirectUri,   // URLSearchParams encodes this correctly
-    state:        state,
-    'grant_options[]': 'per-user'
-  });
+  const installUrl = `https://${shop}/admin/oauth/authorize`
+    + `?client_id=${SHOPIFY_API_KEY}`
+    + `&scope=${encodeURIComponent(SCOPES)}`
+    + `&redirect_uri=${encodeURIComponent(redirectUri)}`
+    + `&state=${state}`;
 
-  const installUrl = `https://${shop}/admin/oauth/authorize?${params.toString()}`;
+  console.log(`[Auth] shop=${shop}`);
+  console.log(`[Auth] redirectUri=${redirectUri}`);
+  console.log(`[Auth] installUrl=${installUrl}`);
 
-  console.log(`[Auth] Redirecting to: ${installUrl}`);
-  res.redirect(installUrl);
+  // If ?go=1 skip the confirm page and redirect immediately
+  if (req.query.go === '1') {
+    return res.redirect(installUrl);
+  }
+
+  // Show confirm page — lets user verify redirect URI before proceeding
+  res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Install — Silicon Wives Swipe App</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #fdf4f8;
+           display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+    .box { background:#fff; border-radius:16px; padding:36px; max-width:560px; width:90%;
+           box-shadow:0 4px 24px rgba(233,30,140,0.12); }
+    h2 { color:#e91e8c; margin:0 0 16px; }
+    .label { font-size:11px; font-weight:600; color:#999; text-transform:uppercase;
+             letter-spacing:.8px; margin:16px 0 4px; }
+    .val { background:#f6f0f4; border-radius:8px; padding:10px 14px;
+           font-family:monospace; font-size:13px; word-break:break-all; color:#1a0a14; }
+    .warn { background:#fff8e1; border:1px solid #ffd54f; border-radius:8px;
+            padding:12px 16px; font-size:13px; margin:16px 0; line-height:1.5; }
+    .btn { display:block; background:linear-gradient(135deg,#e91e8c,#ff6b6b);
+           color:#fff; border:none; border-radius:10px; padding:14px 24px;
+           font-size:15px; font-weight:700; cursor:pointer; width:100%;
+           margin-top:20px; text-decoration:none; text-align:center; }
+  </style>
+</head>
+<body>
+<div class="box">
+  <h2>💕 Install Silicon Wives Swipe App</h2>
+
+  <div class="label">Installing on</div>
+  <div class="val">${shop}</div>
+
+  <div class="label">Redirect URI (must be in Partner Dashboard)</div>
+  <div class="val">${redirectUri}</div>
+
+  <div class="warn">
+    ⚠️ Before clicking Install, make sure the Redirect URI above is saved in your
+    <strong>Shopify Partner Dashboard → your app → Configuration → Allowed redirection URL(s)</strong>
+    exactly as shown.
+  </div>
+
+  <a class="btn" href="/auth?shop=${shop}&go=1">Install App on ${shop}</a>
+</div>
+</body>
+</html>`);
 });
 
 // Step 2: OAuth callback — Shopify sends back: shop, code, state, hmac
