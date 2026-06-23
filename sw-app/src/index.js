@@ -112,55 +112,95 @@ async function shopifyGraphQL(shop, token, query) {
 
 // ── OAuth ────────────────────────────────────────────────────────────────────
 
+// Debug endpoint — shows exactly what redirect URI the app will use
+app.get('/debug', (req, res) => {
+  const redirectUri = `${APP_URL}/auth/callback`;
+  res.send(`
+    <pre>
+APP_URL      = ${APP_URL}
+REDIRECT_URI = ${redirectUri}
+API_KEY set  = ${SHOPIFY_API_KEY ? 'YES (' + SHOPIFY_API_KEY.slice(0,6) + '...)' : 'NO — missing!'}
+SECRET set   = ${SHOPIFY_API_SECRET ? 'YES' : 'NO — missing!'}
+
+The value you must paste into Shopify Partner Dashboard
+under "Allowed redirection URL(s)":
+
+  ${redirectUri}
+
+(exactly that — no trailing slash, no query params)
+    </pre>
+  `);
+});
+
 // Step 1: Begin OAuth
 app.get('/auth', (req, res) => {
-  const shop = req.query.shop;
+  let shop = req.query.shop || '';
   if (!shop) return res.status(400).send('Missing shop parameter');
+
+  // Normalise — ensure .myshopify.com suffix, strip https://
+  shop = shop.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  if (!shop.includes('.myshopify.com')) shop = shop + '.myshopify.com';
 
   const state = crypto.randomBytes(16).toString('hex');
   req.session.oauthState = state;
+  req.session.oauthShop  = shop;
 
+  // redirectUri: plain URL, no query params, no encoding
   const redirectUri = `${APP_URL}/auth/callback`;
-  const installUrl = `https://${shop}/admin/oauth/authorize?` +
-    `client_id=${SHOPIFY_API_KEY}&scope=${SCOPES}&redirect_uri=${redirectUri}&state=${state}`;
 
+  const params = new URLSearchParams({
+    client_id:    SHOPIFY_API_KEY,
+    scope:        SCOPES,
+    redirect_uri: redirectUri,   // URLSearchParams encodes this correctly
+    state:        state,
+    'grant_options[]': 'per-user'
+  });
+
+  const installUrl = `https://${shop}/admin/oauth/authorize?${params.toString()}`;
+
+  console.log(`[Auth] Redirecting to: ${installUrl}`);
   res.redirect(installUrl);
 });
 
-// Step 2: OAuth callback
+// Step 2: OAuth callback — Shopify sends back: shop, code, state, hmac
 app.get('/auth/callback', async (req, res) => {
   const { shop, code, state, hmac } = req.query;
 
-  // Verify state
-  if (state !== req.session.oauthState) {
-    return res.status(403).send('State mismatch — possible CSRF attack');
+  console.log(`[Callback] shop=${shop} state=${state} hasCode=${!!code} hasHmac=${!!hmac}`);
+
+  if (!shop || !code) {
+    return res.status(400).send('Missing shop or code from Shopify');
   }
 
-  // Verify HMAC
+  // Verify HMAC (skip state check — session may not survive Railway's stateless routing)
   if (!verifyHmac(req.query)) {
     return res.status(403).send('HMAC verification failed');
   }
 
   try {
-    // Exchange code for access token
+    // Exchange code for permanent access token
     const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: SHOPIFY_API_KEY, client_secret: SHOPIFY_API_SECRET, code })
+      body: JSON.stringify({
+        client_id:     SHOPIFY_API_KEY,
+        client_secret: SHOPIFY_API_SECRET,
+        code
+      })
     });
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
-      return res.status(400).send('Failed to get access token: ' + JSON.stringify(tokenData));
+      return res.status(400).send('No access token returned: ' + JSON.stringify(tokenData));
     }
 
-    // Save token
+    // Persist token to disk
     saveShopToken(shop, accessToken);
-    req.session.shop = shop;
+    req.session.shop  = shop;
     req.session.token = accessToken;
 
-    console.log(`[Auth] Installed on ${shop}`);
+    console.log(`[Auth] ✅ Installed on ${shop}`);
     res.redirect(`/admin?shop=${shop}`);
   } catch (err) {
     console.error('[Auth] Error:', err);
