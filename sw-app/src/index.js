@@ -458,7 +458,7 @@ async function fetchAllProducts(shop, token, forceRefresh = false) {
       compare_at: variant.compare_at_price || null,
       variant_id: variant.id,
       image: p.images?.[0]?.src || '',
-      images: (p.images || []).slice(0, 8).map(i => i.src),
+      images: (p.images || []).map(i => i.src),
       body_html: p.body_html || '',
       video_urls: videoMap[p.id] || []
     };
